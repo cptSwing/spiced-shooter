@@ -1,4 +1,7 @@
-var scene, camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper, plane, heroModel;
+var scene, camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
+var heroModel, terrainModel;
+var allGLTFLoaded = false;
+var animationFrameId = null;
 
 function createScene() {
     // Get the width and the height of the screen, use them to set up the aspect ratio of the camera and the size of the renderer.
@@ -59,11 +62,6 @@ function createScene() {
     }
 }
 
-function renderScene() {
-    requestAnimationFrame( renderScene );
-    renderer.render( scene, camera );
-}
-
 createScene();
 createLights();
 createGeometry();
@@ -71,6 +69,7 @@ createGeometry();
 
 /* CONTROLS: */
 var transformSpeedMultiplier = 10;
+var paused = false;
 
 document.addEventListener('keydown', function(e) {
     if (e.code == 'ArrowUp') {
@@ -105,16 +104,43 @@ document.addEventListener('keydown', function(e) {
         }
         // anim move right
     }
-
-
     else if (e.code == 'Pause') {
-        console.log(`Paused`);
+        if (!paused) {
+            console.log(`Paused`);
+            paused = !paused;
+            cancelAnimationFrame(animationFrameId);
+        } else {
+            console.log(`Unpaused`);
+            paused = !paused;
+            animationFrameId = requestAnimationFrame( renderScene );
+        }
+
     }
-    // console.log(`heroModel.position.y: `, heroModel.position.y);
-    // console.log(`heroModel.position.x: `, heroModel.position.x);
 });
 
 // var orbit = new THREE.OrbitControls(camera, renderer.domElement);
 // orbit.enableZoom = true;
 
-renderScene();
+function renderScene() {
+    // console.log(`terrainModel in renderScene(): `, terrainModel);
+    terrainModel.position.y -= 1;
+    shadowLight.target.position.y -= 1;
+    shadowLight.position.y -= 1;
+
+    animationFrameId = requestAnimationFrame( renderScene );
+    renderer.render( scene, camera );
+}
+
+function checkIfDone() {
+    if (allGLTFLoaded) {
+        console.log(`allGLTFLoaded: `, allGLTFLoaded);
+        renderScene();
+    } else {
+        setTimeout(function() {
+            console.log(`allGLTFLoaded: `, allGLTFLoaded);
+            checkIfDone();
+        }, 1000);
+    }
+}
+
+checkIfDone();

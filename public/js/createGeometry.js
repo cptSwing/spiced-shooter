@@ -1,53 +1,86 @@
 function createGeometry() {
-    // width, height, segments
-    var planeGeometry = new THREE.PlaneBufferGeometry( 1250, 2000, 2 );
-    var planeMaterial = new THREE.MeshStandardMaterial( {color: 0x1B6525, name: 'planeMaterial'} );
-    plane = new THREE.Mesh( planeGeometry, planeMaterial );
-    console.log(`planeGeometry, planeMaterial: `, planeGeometry, planeMaterial);
-    plane.receiveShadow = true;
-    plane.position.x = 0;
-    plane.position.y = 0;
-    plane.position.z = 0;
-    scene.add( plane );
-
     /** LOAD GLTF MODELS: **/
 
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
     THREE.DRACOLoader.setDecoderPath('/');
 
-    // Instantiate a loader
-    var loader = new THREE.GLTFLoader();
+    // Instantiate a loader - we also need the manager due to gltf's async loading (and the loader firing onLoad() too early)
+    var manager = new THREE.LoadingManager();
+    var loader = new THREE.GLTFLoader(manager);
     loader.setDRACOLoader(new THREE.DRACOLoader());
 
-    // Load plane resource
+    manager.itemStart( 'hero' );
+    // Load airplane resource:
+    // (first function is called when resource is loaded, second while it is loading, third on errors)
     loader.load('./3d_content/hero.glb', function (gltf) {
-        gltf.scene.scale.x = 0.125;
-        gltf.scene.scale.y = 0.125;
-        gltf.scene.scale.z = 0.125;
 
-        gltf.scene.position.x = 0;
-        gltf.scene.position.y = 0;
-        gltf.scene.position.z = 50;
+        // need to assign this to a variable in order for key events to work (move model around)
+        heroModel = gltf.scene;
 
+        heroModel.position.x = 0;
+        heroModel.position.y = 0;
+        heroModel.position.z = 100;
 
-        // gltf.scene.rotation.x = Math.PI / 2; this is annoyingly in RADients
-        gltf.scene.rotation.y = Math.PI / 2;
-        gltf.scene.rotation.z = Math.PI / 2;
+        // heroModel.rotation.x = Math.PI / 2; this is annoyingly in RADients
+        heroModel.rotation.y = Math.PI / 2;
+        heroModel.rotation.z = Math.PI / 2;
 
         // FFS. all SUBMESHES need the shadows flags set, properties are NOT inherited.
-        gltf.scene.traverse( function( node ) {
+        heroModel.traverse( function( node ) {
             if ( node instanceof THREE.Mesh ) {
                 node.castShadow = true;
                 node.receiveShadow = true;
             }
         });
 
-        // need to assign this in order for key events to work (move model around)
-        heroModel = gltf.scene
         scene.add(heroModel);
+
+        manager.itemEnd( 'foo' );
+
     }, function (xhr) {
         console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
     }, function (error) {
         console.log('An error happened: ', error);
     });
+
+    manager.itemStart('terrain');
+    // Load terrain resource:
+    // (first function is called when resource is loaded, second while it is loading, third on errors)
+    loader.load('./3d_content/terrain.glb', function (gltf) {
+
+        terrainModel = gltf.scene;
+
+        terrainModel.position.x = 0;
+        terrainModel.position.y = 0;
+        terrainModel.position.z = 0;
+
+        // terrainModel.rotation.x = Math.PI / 2; this is annoyingly in RADients
+        terrainModel.rotation.y = Math.PI / 2;
+        terrainModel.rotation.z = Math.PI / 2;
+
+        // FFS. all SUBMESHES need the shadows flags set, properties are NOT inherited.
+        terrainModel.traverse( function( node ) {
+            if ( node instanceof THREE.Mesh ) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+            }
+        });
+
+        scene.add(terrainModel);
+
+        manager.itemEnd('terrain');
+
+    }, function (xhr) {
+        console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
+    }, function (error) {
+        console.log('An error happened: ', error);
+    });
+
+    // I assume the manager listens to 'itemEnd' events and then fires the following
+    manager.onLoad = function () {
+      console.log('everything is done');
+      allGLTFLoaded = true;
+    };
+
+
 }
