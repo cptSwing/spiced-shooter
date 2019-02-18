@@ -19,7 +19,7 @@ function createGeometry() {
 
         heroModel.position.x = 0;
         heroModel.position.y = 0;
-        heroModel.position.z = 75;
+        heroModel.position.z = 0;
 
         // deg converted to radiants
         heroModel.rotation.y = 90 * Math.PI / 180;
@@ -37,6 +37,9 @@ function createGeometry() {
 
         manager.itemEnd( 'foo' );
 
+        // This we need in order to check if model leaves the screen
+        heroModelBoundingBox = new THREE.Box3().setFromObject( heroModel );
+
     }, function (xhr) {
         console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
     }, function (error) {
@@ -48,6 +51,4 @@ function createGeometry() {
         console.log('everything is done');
         allGLTFLoaded = true;
     };
-
-
 }

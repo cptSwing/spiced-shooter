@@ -1,40 +1,47 @@
 // Generate a terrain
 function createTerrain() {
     // allow for wider terrain to accomodate perspective camera
-    var widthBeyondScreen = 0.4;
+    var widthBeyondScreen = 0.3;
     var xSize = WIDTH + (WIDTH * widthBeyondScreen);
     var ySize = 10000;
 
     // yS: I need to have even distributing of segments to avoid stretching. floats throw an error, so round
-    var xS = 60;
+    var xS = 50;
     var yS = Math.round(xS * (ySize / (WIDTH + (WIDTH * widthBeyondScreen) ) ) );
 
     terrainScene = THREE.Terrain({
-        easing: THREE.Terrain.Linear,
-        frequency: 5,
+        // Valid values include THREE.Terrain.Linear, .EaseIn, .EaseOut, .EaseInOut, .InEaseOut:
+        easing: THREE.Terrain.EaseInOut,
+        frequency: 4,
         heightmap: THREE.Terrain.Hill,
         material: new THREE.MeshStandardMaterial({color: 0x5566aa, metalness: 0 }),
-        maxHeight: 25,
-        minHeight: -200,
-        steps: 4,
+        maxHeight: -50,
+        minHeight: -350,
+        steps: 2,
         stretch: true,
+        turbulent: false,
         useBufferGeometry: false,
         xSize: xSize,
         ySize: ySize,
         xSegments: xS,
-        ySegments: yS
+        ySegments: yS,
+        after: function after(vertices, options) {
+            // true turns the edges up; false turns them down; the number defines how far from edge the curvature starts; curve function
+            THREE.Terrain.Edges( vertices, options, true, 300, THREE.Terrain.EaseInOut );
+            // should add some smoothing here too
+        }
     });
+
     terrainScene.castShadow = true;
     terrainScene.receiveShadow  = true;
 
     // Get the geometry of the terrain across which you want to scatter meshes
     var geo = terrainScene.children[0].geometry;
 
-    var decoMeshGeo = new THREE.Mesh( new THREE.CylinderGeometry(1, 10, 100, 6) );
-    // create a bounding box, and move its origin to the base (translate x Y z)
+    var decoMeshGeo = new THREE.Mesh( new THREE.CylinderGeometry(1, 10, 50, 6) );
+    // create a bounding box, and move its origin/center to the base (translate Y)
     decoMeshGeo.geometry.computeBoundingBox();
-    decoMeshGeo.geometry.translate(0, 50, 0);
-    console.log(`decoMeshGeo: `, decoMeshGeo);
+    decoMeshGeo.geometry.translate(0, 25, 0);
     var decoMeshMat = new THREE.MeshStandardMaterial( { color: 0xFFAA00, metalness: 0 } );
 
     // Add randomly distributed foliage
