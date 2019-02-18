@@ -1,5 +1,5 @@
 var scene, camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
-var heroModel, terrainModel;
+var heroModel, terrainScene;
 var allGLTFLoaded = false;
 var animationFrameId = null;
 
@@ -16,20 +16,24 @@ function createScene() {
 
     // scene.fog = new THREE.Fog(0xf7d9aa, 1000, 2000);
 
-    camera = new THREE.OrthographicCamera(
-        WIDTH / - 2,
-        WIDTH / 2,
-        HEIGHT / 2,
-        HEIGHT / - 2,
-        0,
-        1000
-    );
+    // camera = new THREE.OrthographicCamera(
+    //     WIDTH / - 2,
+    //     WIDTH / 2,
+    //     HEIGHT / 2,
+    //     HEIGHT / - 2,
+    //     0,
+    //     1000
+    // );
 
+    // field of view, aspect ratio, near plane, far plane
+    camera = new THREE.PerspectiveCamera(30, WIDTH/HEIGHT, 1, 5000);
 
     // Set the position of the camera
     camera.position.x = 0;
-    camera.position.z = 500;
-    camera.position.y = 0;
+    camera.position.z = 1250;
+    camera.position.y =  -(HEIGHT*0.125) - (HEIGHT);
+    camera.rotation.x = 35 * Math.PI / 180;
+
 
 
     // Create the renderer
@@ -61,10 +65,6 @@ function createScene() {
         camera.updateProjectionMatrix();
     }
 }
-
-createScene();
-createLights();
-createGeometry();
 
 
 /* CONTROLS: */
@@ -118,14 +118,25 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// var orbit = new THREE.OrbitControls(camera, renderer.domElement);
-// orbit.enableZoom = true;
+
+
+createScene();
+createLights();
+createGeometry();
+createTerrain();
+
+scene.traverse( function( node ) {
+    if ( node instanceof THREE.Mesh ) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+    }
+});
 
 function renderScene() {
     // console.log(`terrainModel in renderScene(): `, terrainModel);
-    terrainModel.position.y -= 1;
-    shadowLight.target.position.y -= 1;
-    shadowLight.position.y -= 1;
+    terrainScene.position.y -= 1;
+    // shadowLight.target.position.y -= 1;
+    // shadowLight.position.y -= 1;
 
     animationFrameId = requestAnimationFrame( renderScene );
     renderer.render( scene, camera );
@@ -144,3 +155,7 @@ function checkIfDone() {
 }
 
 checkIfDone();
+
+// orbit controls I use for debugging - mess with the viewport bounds though (re keyboardcontrol of hero)
+// var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+// orbit.enableZoom = true;
