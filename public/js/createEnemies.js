@@ -1,14 +1,22 @@
 // Tring to build a Constructor here for Enemies..!
 function createEnemies() {
+    var enemyIndex = 1;
 
     function Enemy() {
         var enGeo = new THREE.BoxGeometry( 100, 100, 100 );
         var enMat = new THREE.MeshStandardMaterial( { color: 0xFFAA00, metalness: 0 } );
         var en = new THREE.Mesh( enGeo, enMat );
-        en.hitpoints = 100;
-        en.killDistance = 50;
-        en.hit = false;
-        // en.rotation.x = Math.random;
+
+        en.name = `Enemy ${enemyIndex}`;
+        enemyIndex++;
+
+        en.userData.hitpoints = 100;
+        en.userData.killDistance = 75;
+        en.userData.hit = false;
+
+        en.castShadow = true;
+        en.receiveShadow = true;
+
         return en;
     }
 

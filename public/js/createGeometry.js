@@ -30,15 +30,21 @@ function createGeometry() {
             if ( node instanceof THREE.Mesh ) {
                 node.castShadow = true;
                 node.receiveShadow = true;
+
+                // generating boundingSpheres for collision, these are null by default
+                if ( node.geometry.boundingSphere == null ) {
+                    node.geometry.computeBoundingSphere();
+                }
             }
         });
-
+        
         scene.add(heroModel);
 
         manager.itemEnd( 'foo' );
 
         // This we need in order to check if model leaves the screen
-        heroModelBoundingBox = new THREE.Box3().setFromObject( heroModel );
+        // heroModelBoundingBox = new THREE.Box3().setFromObject( heroModel );
+
 
     }, function (xhr) {
         console.log( (xhr.loaded / xhr.total * 100) + '% loaded');

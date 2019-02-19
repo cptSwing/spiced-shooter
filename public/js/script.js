@@ -1,67 +1,13 @@
-var scene, camera, cameraFrustum, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
-var heroModel, heroModelBoundingBox, terrainScene;
+/* I DECLARE EVERYTHING IN HERE */
+
+var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
+var heroModel, heroModelCollisionDamageOthers = 50;
+var terrainScene;
 var allGLTFLoaded = false;
 var animationFrameId = null;
 var enemyArr = [];
-
-function createScene() {
-    // Get the width and the height of the screen, use them to set up the aspect ratio of the camera and the size of the renderer.
-    HEIGHT = window.innerHeight;
-    WIDTH = window.innerWidth;
-    console.log(`WIDTH: `, WIDTH);
-    console.log(`HEIGHT: `, HEIGHT);
-
-
-    // Create the scene
-    scene = new THREE.Scene();
-
-    scene.fog = new THREE.FogExp2(0xf7d9aa, 0.0004);
-
-    // // color, near, far
-    // scene.fog = new THREE.Fog(0xf7d9aa, 1500, 2000);
-
-    // field of view, aspect ratio, near plane, far plane
-    camera = new THREE.PerspectiveCamera(45, WIDTH/HEIGHT, 1, 5000);
-
-    // Set the position of the camera. Y is a bit of a drag in that I need to set arbitrary values to fit 0 0 0 on the center of the screen (perspective distortion)
-    camera.position.x = 0;
-    camera.position.z = 600;
-    camera.position.y =  -(HEIGHT*0.5);
-    camera.rotation.x = 40 * Math.PI / 180;
-
-    camera.updateMatrix();
-    camera.updateMatrixWorld();
-    cameraFrustum = new THREE.Frustum();
-    cameraFrustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ));
-
-    // Create the renderer
-    renderer = new THREE.WebGLRenderer({
-        // alpha: true,
-        // antialias: true
-    });
-
-    // Define the size of the renderer; in this case, it will fill the entire screen
-    renderer.setSize(WIDTH, HEIGHT);
-
-    // Enable shadow rendering
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    // Add the DOM element of the renderer to the container we created in the HTML
-    container = document.getElementById('world');
-    container.appendChild(renderer.domElement);
-
-    // Listen to the screen: if the user resizes it we have to update the camera and the renderer size
-    window.addEventListener('resize', handleWindowResize, false);
-    function handleWindowResize() {
-        // update height and width of the renderer and the camera
-        HEIGHT = window.innerHeight;
-        WIDTH = window.innerWidth;
-        renderer.setSize(WIDTH, HEIGHT);
-        camera.aspect = WIDTH / HEIGHT;
-        camera.updateProjectionMatrix();
-    }
-}
+var projectileArrFriendly = [];
+var proton, jetSmokeEmitterR, jetSmokeEmitterL, enemyExplosion;
 
 
 /* CONTROLS: */
@@ -70,43 +16,16 @@ var paused = false;
 
 document.addEventListener('keydown', function(e) {
     if (e.code == 'ArrowUp') {
-        // if ( heroModel.position.y > (-HEIGHT / 2) && heroModel.position.y < (HEIGHT / 2) ) {
-            heroModel.position.y += transformSpeedMultiplier * 1;
-        // } else {
-            // heroModel.position.y = 0;
-        // }
-        // anim move forward
-        camera.updateMatrix();
-        camera.updateMatrixWorld();
-
-        collision = cameraFrustum.intersectsBox( heroModelBoundingBox );
-        console.log(`collision`, collision);
-
-
+        heroModel.position.y += transformSpeedMultiplier * 1;
     }
     else if (e.code == 'ArrowDown') {
-        if ( heroModel.position.y > (-HEIGHT / 2) && heroModel.position.y < (HEIGHT / 2) ) {
-            heroModel.position.y -= transformSpeedMultiplier * 1;
-        } else {
-            heroModel.position.y = 0;
-        }
-        // anim move backward
+        heroModel.position.y -= transformSpeedMultiplier * 1;
     }
     else if (e.code == 'ArrowRight') {
-        if ( heroModel.position.x > (-WIDTH / 2) && heroModel.position.x < (WIDTH / 2) ) {
-            heroModel.position.x += transformSpeedMultiplier * 1;
-        } else {
-            heroModel.position.x = 0;
-        }
-        // anim move left
+        heroModel.position.x += transformSpeedMultiplier * 1;
     }
     else if (e.code == 'ArrowLeft') {
-        if ( heroModel.position.x > (-WIDTH / 2) && heroModel.position.x < (WIDTH / 2) ) {
-            heroModel.position.x -= transformSpeedMultiplier * 1;
-        } else {
-            heroModel.position.x = 0;
-        }
-        // anim move right
+        heroModel.position.x -= transformSpeedMultiplier * 1;
     }
     else if (e.code == 'Pause') {
         if (!paused) {
@@ -123,60 +42,57 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+/*************************/
+
+init();
+
+function init() {
+    createScene();
+    createLights();
+    createParticles();
+    createGeometry();
+    createTerrain();
+    createEnemies();
+    checkIfDone(); // runs update
+}
 
 
-createScene();
-createLights();
-createGeometry();
-createTerrain();
-createEnemies();
-
-var collision;
-
+/* UPDATE function which runs every frame */
 function update() {
-    terrainScene.position.y -= 1;
+    // scrolling..
+    terrainScene.position.y -= 0.5;
 
-    function enemyCollision(){
-        // Use to also check if enemy has left screen ?? (remove from array of enemies)
-
-        enemyArr.forEach( (val, idx) => {
-            // THREE's distanceTo is a method of Vector3(), so we need to use this
-            var enemyPos = new THREE.Vector3();
-
-            // since for some reason setFromMatrixPosition initializes with 0 0 0, there was a hit event at the very start. hence setTimeout
-            setTimeout(function() {
-
-                // this updates the world position of the enemies each frame
-                enemyPos.setFromMatrixPosition( val.matrixWorld );
-
-                if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) <= val.killDistance && !val.hit ) {
-                    val.hit = true; // to avoid multiple hits
-                    console.log(`\n==========\nhit!\n==========`);
-                    console.log(`enemyPos ${idx}: `, enemyPos);
-                    console.log(`idx, val: `, idx, val);
-
-                // turn the hit counter back to false after we back off. possibly need to tune killDistance / 2 or something
-                } else if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) >= val.killDistance && val.hit ) {
-                    val.hit = false;
-                    console.log(`val.hit: `, val.hit);
-                    // hasCollided=true;
-                    // explode();
-                }
-
-            }, 100);
-        });
-    }
+    updateCameraMatrix();
     enemyCollision();
+
+    // kind of a shitty way to have them follow each other, but them's the breaks
+    jetSmokeEmitterR.p.x = heroModel.position.x + 20;
+    jetSmokeEmitterR.p.y = heroModel.position.y - 22.5;
+
+    jetSmokeEmitterL.p.x = heroModel.position.x - 20;
+    jetSmokeEmitterL.p.y = heroModel.position.y - 22.5;
+
+
+    // this we need. Because reasons.
+    proton.update(clock.getDelta());
+    Proton.Debug.renderInfo(proton, 3);
 
     animationFrameId = requestAnimationFrame( update );
     renderer.render( scene, camera );
 }
 
+
+
+
+
+/*************************/
+
 function checkIfDone() {
     if (allGLTFLoaded) {
         console.log(`allGLTFLoaded: `, allGLTFLoaded);
+
         update();
-    } else {
+    } else {    // check again in one second
         setTimeout(function() {
             console.log(`allGLTFLoaded: `, allGLTFLoaded);
             checkIfDone();
@@ -184,7 +100,69 @@ function checkIfDone() {
     }
 }
 
-checkIfDone();
+function updateCameraMatrix() {
+    // Not entirely sure what this does. Possibly this needs to watch the objects instead of updating the camera all the time?
+    camera.updateMatrixWorld();
+    camera.matrixWorldInverse.getInverse( camera.matrixWorld );
+    cameraViewProjectionMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
+    cameraFrustum.setFromMatrix( cameraViewProjectionMatrix );
+
+    // target the largest submeshes' boundingSphere
+    // console.log(`cameraFrustum.intersectsObject ( heroModel ): `, cameraFrustum.intersectsObject ( heroModel.children[0].children[0] ));
+}
+
+function enemyCollision() {
+    // since for some reason setFromMatrixPosition initializes with 0 0 0, there was a hit event at the very start. hence setTimeout
+    setTimeout(function() {
+
+        for (var i = 0; i < enemyArr.length; i++) {
+            /** IN HERE I NEED TO UPDATE THE EXPLOSION PARTICLE EMITTERS TO BE SAME POS AS THE ENEMIES
+            THEY WILL HAVE TO HAVE AN EMITTER CREATED THAT CORRESPONDS TO THEIR .name OR SIMILAR, for using with this loop **/
+
+
+            // THREE's distanceTo() is a method of Vector3(), so we need to use this
+            var enemyPos = new THREE.Vector3();
+
+            // this updates the world position of the enemies each frame
+            enemyPos.setFromMatrixPosition( enemyArr[i].matrixWorld );
+
+            if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) <= enemyArr[i].userData.killDistance && !enemyArr[i].userData.hit ) {
+                enemyArr[i].userData.hit = true; // to avoid multiple hits
+                console.log(`\n==========\nhit!\n==========`);
+                enemyArr[i].userData.hitpoints -= heroModelCollisionDamageOthers;
+                console.log(`${enemyArr[i].name} hitpoints now: ${enemyArr[i].userData.hitpoints} `);
+
+                if ( enemyArr[i].userData.hitpoints <= 0 ) {
+                    console.log(`DEAD NME`);
+
+                    enemyExplosion.emit();
+
+                    // the following do NOT work for some goddamn reason
+                    enemyArr[i].geometry.dispose();
+                    enemyArr[i].material.dispose();
+                    scene.remove( enemyArr[i] );
+                    renderer.renderLists.dispose(); // prevents memory leaks
+
+                    // so I hide it.
+                    enemyArr[i].visible = false;
+
+                    // and remove it from collision calculations at least. need to break out of the for loop or it will miss elements of array in next iteration
+                    enemyArr.splice(i, 1);
+                    console.log(`enemyArr: `, enemyArr);
+                    break;
+                }
+
+            // turn the hit counter back to false after we back off. possibly need to tune killDistance / 2 or something
+            } else if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) >= enemyArr[i].userData.killDistance && enemyArr[i].userData.hit ) {
+                enemyArr[i].userData.hit = false;
+                console.log(`enemyArr[i].userData.hit: `, enemyArr[i].userData.hit);
+                // hasCollided=true;
+                // explode();
+            }
+
+        }
+    }, 10);
+}
 
 // orbit controls I use for debugging - mess with the viewport bounds though (re keyboardcontrol of hero)
 // var orbit = new THREE.OrbitControls(camera, renderer.domElement);

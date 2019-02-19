@@ -1,13 +1,13 @@
 function createLights() {
     // A hemisphere light is a gradient colored light: the 1st parameter is the sky color, the 2nd parameter is the ground color, the 3d parameter is the intensity of the light
-    hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, 2.5);
+    hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, 1.25);
 
     shadowLight = new THREE.DirectionalLight(0xffffff, .9);
 
-    shadowLight.position.set(200, 200, 200);
+    shadowLight.position.set( 0, 300, 200);
     shadowLight.castShadow = true;
 
-    shadowLight.target.position.set(0, 0, 0);
+    shadowLight.target.position.set(100, 300, 0);
 
     // second arg is size
     shadowLightHelper = new THREE.DirectionalLightHelper( shadowLight, 100);
