@@ -1,105 +1,71 @@
-/* I DECLARE EVERYTHING IN HERE */
+// /* eslint-disable */
+/* eslint no-undef: 0 */
 
-var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, THREE, renderer, container, hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
-var heroModel, heroModelCollisionDamageOthers = 50;
-var terrainScene;
-var allGLTFLoaded = false;
-var animationFrameId = null;
-var enemyArr = [];
+
 var projectileArrFriendly = [];
-var proton, jetSmokeEmitterR, jetSmokeEmitterL, enemyExplosion;
+var playerScore = 0;
+var playerHealthElement = document.getElementById('player_health');
+var playerScoreElement = document.getElementById('player_score');
 
+/** BEGIN STUFF **/
 
-/* CONTROLS: */
-var transformSpeedMultiplier = 10;
-var paused = false;
-
-document.addEventListener('keydown', function(e) {
-    if (e.code == 'ArrowUp') {
-        heroModel.position.y += transformSpeedMultiplier * 1;
-    }
-    else if (e.code == 'ArrowDown') {
-        heroModel.position.y -= transformSpeedMultiplier * 1;
-    }
-    else if (e.code == 'ArrowRight') {
-        heroModel.position.x += transformSpeedMultiplier * 1;
-    }
-    else if (e.code == 'ArrowLeft') {
-        heroModel.position.x -= transformSpeedMultiplier * 1;
-    }
-    else if (e.code == 'Pause') {
-        if (!paused) {
-            console.log(`Paused`);
-            paused = !paused;
-            cancelAnimationFrame(animationFrameId);
-        } else {
-            console.log(`Unpaused`);
-            paused = !paused;
-            // call anim again and collect new ID in the process
-            animationFrameId = requestAnimationFrame( update );
-        }
-
-    }
-});
-
-/*************************/
-
-init();
+createGeometry();   // load gltf models first
+continueIfLoadingDone(); // runs init
 
 function init() {
     createScene();
     createLights();
     createParticles();
-    createGeometry();
     createTerrain();
-    createEnemies();
-    checkIfDone(); // runs update
+    createActors();
+
+    everythingElse(); // what else needs initializing
+    function everythingElse() {
+        // orbit controls I use for debugging - mess with the viewport bounds though (re keyboardcontrol of hero)
+        // var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+        // orbit.enableZoom = true;
+    }
+
+    update();
 }
 
-
+var animationFrameId = null;
 /* UPDATE function which runs every frame */
+
 function update() {
-    // scrolling..
-    terrainScene.position.y -= 0.5;
+    animationFrameId = requestAnimationFrame( update ); // up top to ensure pausing from within child fn. will run update() before, though!
+
+    terrainScene.position.y -= 0.75;    // scrolling..
 
     updateCameraMatrix();
-    enemyCollision();
 
-    // kind of a shitty way to have them follow each other, but them's the breaks
-    jetSmokeEmitterR.p.x = heroModel.position.x + 20;
-    jetSmokeEmitterR.p.y = heroModel.position.y - 22.5;
+    playerBehaviour();
+    enemyBehaviour();
+    projectileBehaviour();
 
-    jetSmokeEmitterL.p.x = heroModel.position.x - 20;
-    jetSmokeEmitterL.p.y = heroModel.position.y - 22.5;
-
-
-    // this we need. Because reasons.
-    proton.update(clock.getDelta());
+    proton.update(clock.getDelta());    // this we need. Because reasons.
     Proton.Debug.renderInfo(proton, 3);
 
-    animationFrameId = requestAnimationFrame( update );
     renderer.render( scene, camera );
 }
 
 
+/** MAIN FUNCTION BLOCK **/
 
-
-
-/*************************/
-
-function checkIfDone() {
+function continueIfLoadingDone() {
     if (allGLTFLoaded) {
         console.log(`allGLTFLoaded: `, allGLTFLoaded);
-
-        update();
-    } else {    // check again in one second
+        init(); // start things
+    }
+    else {
         setTimeout(function() {
-            console.log(`allGLTFLoaded: `, allGLTFLoaded);
-            checkIfDone();
-        }, 1000);
+            console.log(`allGLTFLoaded: not yet fully loaded.`);
+            continueIfLoadingDone();
+        }, 2000);
     }
 }
 
+/** THE FOLLOWING UPDATE EACH FRAME **/
 function updateCameraMatrix() {
     // Not entirely sure what this does. Possibly this needs to watch the objects instead of updating the camera all the time?
     camera.updateMatrixWorld();
@@ -111,59 +77,166 @@ function updateCameraMatrix() {
     // console.log(`cameraFrustum.intersectsObject ( heroModel ): `, cameraFrustum.intersectsObject ( heroModel.children[0].children[0] ));
 }
 
-function enemyCollision() {
-    // since for some reason setFromMatrixPosition initializes with 0 0 0, there was a hit event at the very start. hence setTimeout
-    setTimeout(function() {
+function playerBehaviour() {
 
-        for (var i = 0; i < enemyArr.length; i++) {
-            /** IN HERE I NEED TO UPDATE THE EXPLOSION PARTICLE EMITTERS TO BE SAME POS AS THE ENEMIES
-            THEY WILL HAVE TO HAVE AN EMITTER CREATED THAT CORRESPONDS TO THEIR .name OR SIMILAR, for using with this loop **/
+    for (var i = 0; i < friendlyBoundingBoxHelpersArr.length; i++) {
+        friendlyBoundingBoxHelpersArr[i].update();
+        friendlyBoundingBoxArr[i].setFromObject(friendlyBoundingBoxHelpersArr[i]);
+    }
 
+    // kind of a shitty way to have them follow each other, but them's the breaks
+    jetSmokeEmitterR.p.x = heroModel.position.x + 20;
+    jetSmokeEmitterR.p.y = heroModel.position.y - 22.5;
+    jetSmokeEmitterR.p.z = heroModel.position.z;
 
-            // THREE's distanceTo() is a method of Vector3(), so we need to use this
-            var enemyPos = new THREE.Vector3();
+    jetSmokeEmitterL.p.x = heroModel.position.x - 20;
+    jetSmokeEmitterL.p.y = heroModel.position.y - 22.5;
+    jetSmokeEmitterL.p.z = heroModel.position.z;
 
-            // this updates the world position of the enemies each frame
-            enemyPos.setFromMatrixPosition( enemyArr[i].matrixWorld );
+    playerHealthElement.innerHTML = heroModel.userData.hitpoints;
+    playerScoreElement.innerHTML = playerScore;
 
-            if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) <= enemyArr[i].userData.killDistance && !enemyArr[i].userData.hit ) {
-                enemyArr[i].userData.hit = true; // to avoid multiple hits
-                console.log(`\n==========\nhit!\n==========`);
-                enemyArr[i].userData.hitpoints -= heroModelCollisionDamageOthers;
-                console.log(`${enemyArr[i].name} hitpoints now: ${enemyArr[i].userData.hitpoints} `);
-
-                if ( enemyArr[i].userData.hitpoints <= 0 ) {
-                    console.log(`DEAD NME`);
-
-                    enemyExplosion.emit();
-
-                    // the following do NOT work for some goddamn reason
-                    enemyArr[i].geometry.dispose();
-                    enemyArr[i].material.dispose();
-                    scene.remove( enemyArr[i] );
-                    renderer.renderLists.dispose(); // prevents memory leaks
-
-                    // so I hide it.
-                    enemyArr[i].visible = false;
-
-                    // and remove it from collision calculations at least. need to break out of the for loop or it will miss elements of array in next iteration
-                    enemyArr.splice(i, 1);
-                    console.log(`enemyArr: `, enemyArr);
-                    break;
-                }
-
-            // turn the hit counter back to false after we back off. possibly need to tune killDistance / 2 or something
-            } else if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) >= enemyArr[i].userData.killDistance && enemyArr[i].userData.hit ) {
-                enemyArr[i].userData.hit = false;
-                console.log(`enemyArr[i].userData.hit: `, enemyArr[i].userData.hit);
-                // hasCollided=true;
-                // explode();
-            }
-
-        }
-    }, 10);
+    if ( heroModel.userData.hitpoints <= 0 ) {
+        destroy( heroModel, null );
+    }
 }
 
-// orbit controls I use for debugging - mess with the viewport bounds though (re keyboardcontrol of hero)
-// var orbit = new THREE.OrbitControls(camera, renderer.domElement);
-// orbit.enableZoom = true;
+function enemyBehaviour() {
+
+
+
+
+    for (var i = 0; i < enemyBoundingBoxHelpersArr.length; i++) {
+        enemyBoundingBoxHelpersArr[i].update();
+        enemyBoundingBoxArr[i].setFromObject(enemyBoundingBoxHelpersArr[i]);
+    }
+
+    for (let i = 0; i < enemyArr.length; i++) {
+        var currentEnemy = enemyArr[i];
+
+        currentEnemy.children[0].children[0].children[1].rotation.x -= 75;
+
+        enemyCollision( currentEnemy, i );   // currentEnemy, index
+    }
+
+
+    /* INTERIOR FUNCTION BLOCK */
+
+    function enemyCollision( currentEnemy, index ) {
+
+        for (let i = 0; i < friendlyBoundingBoxArr.length; i++) {
+            enemyBoundingBoxArr[index].intersectsBox( friendlyBoundingBoxArr[i] ) && console.log('true')
+        }
+        // // since for some reason setFromMatrixPosition initializes with 0 0 0, there was a hit event at the very start. hence setTimeout
+        // setTimeout(function() {
+        //
+        //     var enemyPos = new THREE.Vector3(); // THREE's distanceTo() is a method of Vector3(), so we need to use this
+        //
+        //     enemyPos.setFromMatrixPosition( currentEnemy.matrixWorld ); // updates world pos of enemy each frame
+        //
+        //     // distance is closer than the hitDistance and it's not been hit:
+        //     if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) <= currentEnemy.userData.hitDistance && !currentEnemy.userData.hit ) {
+        //         currentEnemy.userData.hit = true; // to avoid multiple hits
+        //
+        //         console.log(`\n==========\n ${currentEnemy.name} hit!\n==========`);
+        //
+        //         currentEnemy.userData.hitpoints -= heroModel.userData.dealsCollisionDamageAmount;
+        //         heroModel.userData.hitpoints -= currentEnemy.userData.dealsCollisionDamageAmount;
+        //
+        //         console.log(`${currentEnemy.name} hitpoints now: ${currentEnemy.userData.hitpoints} `);
+        //         console.log(`heroModel hitpoints now: ${heroModel.userData.hitpoints}`);
+        //
+        //         // If no more hitpoints or too far off screen
+        //         if ( currentEnemy.userData.hitpoints <= 0 || currentEnemy.position.y < -1000 ) {
+        //             destroy( currentEnemy, index );
+        //         }
+        //     }
+        //     else if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) >= currentEnemy.userData.hitDistance && currentEnemy.userData.hit ) {
+        //         // turn the hit counter back to false after we back off. possibly need to tune hitDistance / 2 or something
+        //         currentEnemy.userData.hit = false;
+        //         console.log(`currentEnemy.userData.hit: `, currentEnemy.userData.hit);
+        //
+        //         // hasCollided=true;
+        //         // explode();
+        //     }
+        //
+        // }, 1);
+    }
+}
+
+function projectileBehaviour() {
+    // if Projectiles exist
+    if ( projectileArrFriendly.length > 0 ) {
+
+        projectileArrFriendly.forEach( (projectile, idx) => {
+            projectile.position.y += 10;
+
+            // projectile.traverse( function( node ) {
+            //     if ( node instanceof THREE.Mesh ) {
+            //         console.log(`node.geometry.boundingSphere.intersectsSphere(  ): `, node.geometry.boundingSphere.intersectsSphere());
+            //     }
+            // });
+
+            // enemyArr.forEach( (curEnemy, index) => {
+            //
+            //     console.log(`projectile: `, projectile);
+            //     console.log(`curEnemy: `, curEnemy);
+            //     // var enemyPos = new THREE.Vector3(); // THREE's distanceTo() is a method of Vector3(), so we need to use this
+            //     // enemyPos.setFromMatrixPosition( curEnemy.matrixWorld ); // updates world pos of enemy each frame
+            //
+            //     if ( projectile.userData.boundingBox.intersectsBox( curEnemy.userData.boundingBox ) ) {
+            //
+            //         console.log(`\n==========\n ${curEnemy.name} hit!\n==========`);
+            //
+            //         // curEnemy.userData.hitpoints -= projectile.userData.dealsDamageAmount;
+            //         //
+            //         // console.log(`${curEnemy.name} hitpoints now: ${curEnemy.userData.hitpoints} `);
+            //         //
+            //         // // If no more hitpoints or too far off screen
+            //         // if ( curEnemy.userData.hitpoints <= 0) {
+            //         //     destroy( curEnemy, index );
+            //         // }
+            //     }
+            // })
+        })
+    }
+}
+
+function destroy( actor, index ) {
+    // enemyExplosion.emit();
+
+    if ( actor == heroModel )   // if its myself
+    {
+        // no more steering
+        document.removeEventListener('keydown', keybinds);
+
+        // Death anim
+        jetSmokeEmitterL.behaviours[3].a._arr[0] = {r: 1.0, g: 0.1, b: 0.1};    // changing this just makes it black
+        jetSmokeEmitterR.behaviours[3].b._arr[0] = {r: 0.1, g: 0.1, b: 0.1};
+
+        heroModel.position.z -= 2;
+        heroModel.position.x += 4;
+        heroModel.rotation.z -= 3 * Math.PI / 180;
+        heroModel.rotation.y += 5 * Math.PI / 180;
+
+        // pause
+        setTimeout( ()=> {
+            actor.visible = false;
+            cancelAnimationFrame(animationFrameId);
+        }, 2000 );
+    }
+    else
+    {
+        playerScore += actor.userData.pointsIfKilled;   // update playerScore
+        enemyArr.splice(index, 1);
+        console.log(`enemyArr: `, enemyArr);
+        actor.visible = false;
+    }
+
+    // scene.remove is not working; so I hide it.
+    // scene.remove(actor);
+
+    console.log(`${actor.name} DEAD`);
+
+    renderer.renderLists.dispose(); // prevents memory leaks
+}

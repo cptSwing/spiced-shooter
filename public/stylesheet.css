@@ -4,6 +4,30 @@
     box-sizing: border-box;
 }
 
+#game_wrapper {
+}
+
+#scoreboard {
+    position: absolute;
+    top: 0;
+    background-color: red;
+    z-index: 100;
+    width: 300px;
+    height: 50px;
+}
+
+#player_score {
+    position: relative;
+    left: 0;
+    width: 100px;
+}
+
+#player_health {
+    position: relative;
+    right: 0;
+    width: 100px;
+}
+
 #world {
 	position: absolute;
 	width: 100%;

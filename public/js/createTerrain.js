@@ -1,3 +1,5 @@
+var terrainScene;
+
 // Generate a terrain
 function createTerrain() {
     // allow for wider terrain to accomodate perspective camera
@@ -14,7 +16,7 @@ function createTerrain() {
         easing: THREE.Terrain.EaseInOut,
         frequency: 4,
         heightmap: THREE.Terrain.Hill,
-        material: new THREE.MeshStandardMaterial({color: 0x5566aa, metalness: 0 }),
+        material: new THREE.MeshStandardMaterial({color: 0x8D9A2E, metalness: 0 }),
         maxHeight: -100,
         minHeight: -250,
         steps: 2,
@@ -42,7 +44,7 @@ function createTerrain() {
     // create a bounding box, and move its origin/center to the base (translate Y)
     decoMeshGeo.geometry.computeBoundingBox();
     decoMeshGeo.geometry.translate(0, 25, 0);
-    var decoMeshMat = new THREE.MeshStandardMaterial( { color: 0xFFAA00, metalness: 0 } );
+    var decoMeshMat = new THREE.MeshStandardMaterial( { color: 0x45772A, metalness: 0 } );
 
     // Add randomly distributed foliage
     var decoScene = THREE.Terrain.ScatterMeshes(geo, {

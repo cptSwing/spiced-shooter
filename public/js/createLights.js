@@ -1,3 +1,5 @@
+var hemisphereLight, shadowLight, shadowLightHelper, shadowLightCameraHelper;
+
 function createLights() {
     // A hemisphere light is a gradient colored light: the 1st parameter is the sky color, the 2nd parameter is the ground color, the 3d parameter is the intensity of the light
     hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, 1.25);

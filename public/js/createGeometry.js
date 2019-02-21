@@ -1,60 +1,56 @@
+/* eslint no-undef: 0 */
+
+// Instantiate a loader - we also need the manager due to gltf's async loading (and the loader firing onLoad() too early)
+var manager = new THREE.LoadingManager();
+var loader = new THREE.GLTFLoader(manager);
+loader.setDRACOLoader(new THREE.DRACOLoader());
+THREE.DRACOLoader.setDecoderPath('/'); // Optional: Provide DRACOLoader to decode compressed mesh
+var allGLTFLoaded = false;
+
+
+// Define our loaded GLTF model variables here:
+var heroModel;
+var mobModel;
+
 function createGeometry() {
     /** LOAD GLTF MODELS: **/
-
-    // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-    THREE.DRACOLoader.setDecoderPath('/');
-
-    // Instantiate a loader - we also need the manager due to gltf's async loading (and the loader firing onLoad() too early)
-    var manager = new THREE.LoadingManager();
-    var loader = new THREE.GLTFLoader(manager);
-    loader.setDRACOLoader(new THREE.DRACOLoader());
-
-    manager.itemStart( 'hero' );
-    // Load airplane resource:
-    // (first function is called when resource is loaded, second while it is loading, third on errors)
-    loader.load('./3d_content/hero.glb', function (gltf) {
-
-        // need to assign this to a variable in order for key events to work (move model around)
-        heroModel = gltf.scene;
-
-        heroModel.position.x = 0;
-        heroModel.position.y = 0;
-        heroModel.position.z = 0;
-
-        // deg converted to radiants
-        heroModel.rotation.y = 90 * Math.PI / 180;
-        heroModel.rotation.z = 90 * Math.PI / 180;
-
-        // FFS. all SUBMESHES need the shadows flags set, properties are NOT inherited.
-        heroModel.traverse( function( node ) {
-            if ( node instanceof THREE.Mesh ) {
-                node.castShadow = true;
-                node.receiveShadow = true;
-
-                // generating boundingSpheres for collision, these are null by default
-                if ( node.geometry.boundingSphere == null ) {
-                    node.geometry.computeBoundingSphere();
-                }
-            }
-        });
-        
-        scene.add(heroModel);
-
-        manager.itemEnd( 'foo' );
-
-        // This we need in order to check if model leaves the screen
-        // heroModelBoundingBox = new THREE.Box3().setFromObject( heroModel );
-
-
-    }, function (xhr) {
-        console.log( (xhr.loaded / xhr.total * 100) + '% loaded');
-    }, function (error) {
-        console.log('An error happened: ', error);
-    });
+    createHero();
+    createMob();
 
     // I assume the manager listens to 'itemEnd' events and then fires the following
     manager.onLoad = function () {
-        console.log('everything is done');
+        console.log('Every model is loaded.');
         allGLTFLoaded = true;
     };
+}
+
+//////////////////////////////////
+
+function createHero() {
+    manager.itemStart( 'hero' ); // fire event
+
+    // Load airplane resource: (first function is called when resource is loaded, second while it is loading, third on errors)
+    loader.load('./3d_content/hero.glb', function (gltf) {
+        heroModel = gltf.scene;
+        manager.itemEnd( 'hero' ); // fire event
+
+    }, function (xhr) {
+        // console.log('hero ' + (xhr.loaded / xhr.total * 100) + '% loaded');
+    }, function (error) {
+        console.log('An error happened: ', error);
+    });
+}
+
+function createMob() {
+    manager.itemStart( 'mob' );
+
+    loader.load('./3d_content/mob.glb', function (gltf) {
+        mobModel = gltf.scene;
+        manager.itemEnd( 'mob' );
+
+    }, function (xhr) {
+        // console.log('mob ' + (xhr.loaded / xhr.total * 100) + '% loaded');
+    }, function (error) {
+        console.log('An error happened: ', error);
+    });
 }

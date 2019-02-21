@@ -1,3 +1,6 @@
+/* eslint no-undef: 0 */
+var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, THREE, renderer, container;
+
 
 function createScene() {
     // Get the width and the height of the screen, use them to set up the aspect ratio of the camera and the size of the renderer.
