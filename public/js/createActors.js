@@ -1,14 +1,18 @@
 /* eslint no-undef: 0 */
 
-var enemyArr = [];
-var enemyBoundingBoxHelpersArr = [];
-var enemyBoundingBoxArr = [];
-
 var friendlyArr = [];
 var friendlyBoundingBoxHelpersArr =[];
 var friendlyBoundingBoxArr = [];
 
+
+var enemyArr = [];
+var enemyBoundingBoxHelpersArr = [];
+var enemyBoundingBoxArr = [];
+
+var heroModeloutlineMesh;
+
 var laserBeamR1, laserBeamR2, laserBeamL1, laserBeamL2;
+var laserBeamGroup;
 
 function createActors() {
 
@@ -17,7 +21,6 @@ function createActors() {
     addEnemy( [0, 500] );
     addEnemy( [-200, 750] );
     addEnemy( [0, 1000] );
-
 
 }
 
@@ -40,12 +43,14 @@ function addHero() {
             node.castShadow = true;
             node.receiveShadow = true;
 
+
             // generating boundingSpheres for CAMERA collision checking, these are null by default?
             if ( node.geometry.boundingSphere == null ) {
                 node.geometry.computeBoundingSphere();
             }
         }
     });
+
 
     // helps us create bounding box and visualizes
     var heroBBoxHelper = new THREE.BoxHelper(heroModel, 0x00ff00);
@@ -56,10 +61,26 @@ function addHero() {
     // our actual bounding box
     var heroBBox = new THREE.Box3().setFromObject(heroBBoxHelper);
     heroBBox.name = 'heroBBox';
-    friendlyBoundingBoxArr.unshift(heroBBox);
+    friendlyBoundingBoxArr.unshift(heroBBox);   // always at index 0 !
+
+
+    // outline!
+    var heroModeloutlineMaterial = new THREE.MeshBasicMaterial( { color: 0xFF0000, side: THREE.BackSide } );
+    heroModeloutlineMesh = heroModel.clone();
+    heroModeloutlineMesh.traverse( function( node ) {
+        node.material = heroModeloutlineMaterial;
+    });
+    // heroModeloutlineMesh.rotation.y = 0 * Math.PI / 180;
+    // heroModeloutlineMesh.rotation.x = 0 * Math.PI / 180;
+
+    heroModeloutlineMesh.scale.multiplyScalar(1.1);
+    heroModeloutlineMesh.name = 'heroModeloutlineMesh';
+    heroModeloutlineMesh.visible = false;
+
 
     scene.add(heroModel);
-    friendlyArr.unshift(heroModel);
+    scene.add(heroModeloutlineMesh);
+    friendlyArr.unshift(heroModel); // always at index 0!
 }
 
 ////////////////
@@ -111,7 +132,7 @@ function shootLasers() {
 
     if (loaded) {
         var laserBeam	= new THREEx.LaserBeam();
-        var laserBeamGroup = new THREE.Group();
+        laserBeamGroup = new THREE.Group();
 
         laserBeamR1 = laserBeam.object3d;
 
@@ -133,7 +154,7 @@ function shootLasers() {
         laserBeamL2.position.y = 50;
 
         laserBeamGroup.add( laserBeamR1, laserBeamR2, laserBeamL1, laserBeamL2 );
-        projectileArrFriendly.push( laserBeamR1, laserBeamR2, laserBeamL1, laserBeamL2 );
+        // projectileArrFriendly.push( laserBeamR1, laserBeamR2, laserBeamL1, laserBeamL2 );
 
         // Make sure we fire from hero's positions
         laserBeamGroup.position.x = heroModel.position.x ;

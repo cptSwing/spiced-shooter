@@ -1,4 +1,7 @@
-var proton, jetSmokeEmitterR, jetSmokeEmitterL, enemyExplosion;
+/* eslint no-undef: 0 */
+
+var proton, jetSmokeEmitterR, jetSmokeEmitterL;
+var explosionArray = [];
 
 function createParticles() {
     proton = new Proton();
@@ -6,12 +9,11 @@ function createParticles() {
     jetSmokeEmitterR = createJet('jetSmokeEmitterR');
     jetSmokeEmitterL = createJet('jetSmokeEmitterL');
 
-    enemyExplosion = createExplosion('enemyExplosion')
+    // enemyExplosion = createExplosion('enemyExplosion')
 
     //add Emitters
     proton.addEmitter(jetSmokeEmitterR);
     proton.addEmitter(jetSmokeEmitterL);
-    proton.addEmitter(enemyExplosion);
 
     //add renderer
     proton.addRender(new Proton.SpriteRender(scene));
@@ -54,22 +56,22 @@ function createJet(name) {
 }
 
 
-function createExplosion(name) {
+function createFinalExplosion(name) {
     explosion = new Proton.Emitter();
 
     // setRate -> number of emissions, emission event every n second?
     explosion.rate = new Proton.Rate(new Proton.Span(1, 20), new Proton.Span(0.01));
 
     //addInitialize
-    explosion.addInitialize(new Proton.Position(new Proton.PointZone(0, 0)));
-    explosion.addInitialize(new Proton.Radius(1, 10)); // start small, get very large. possibly good for explosions
-    explosion.addInitialize(new Proton.Life(0, 2.5)); // lifecycle length -> start and end. good for smoketrails possibly, if long life
-    explosion.addInitialize(new Proton.V(20, new Proton.Vector3D(0, 1, 0), 180)); // radius, vector (), tha (something angle??)
+    // explosion.addInitialize(new Proton.Position(new Proton.PointZone(0, 0)));
+    explosion.addInitialize(new Proton.Radius(1, 100)); // start small, get very large. possibly good for explosions
+    explosion.addInitialize(new Proton.Life(0, 0.05)); // lifecycle length -> start and end. good for smoketrails possibly, if long life
+    explosion.addInitialize(new Proton.V(200, new Proton.Vector3D(0, 1, 0), 180)); // radius, vector (), tha (something angle??)
     // not having a velocity looks like a good ray
 
     //addBehaviour
-    explosion.addBehaviour(new Proton.Alpha(0.75, 0));
-    explosion.addBehaviour(new Proton.Scale(.125, 2));
+    explosion.addBehaviour(new Proton.Alpha(1, 0));
+    explosion.addBehaviour(new Proton.Scale(.25, 2));
     // explosion.addBehaviour(new Proton.Force(0, -2.5, 0)); // fx, fy, life (this pushes upwards or downward)
 
     var color1 = new THREE.Color("rgb(250, 0, 0)");
@@ -80,7 +82,6 @@ function createExplosion(name) {
 
     explosion.name = name;
 
-    // explosion.emit();
     return explosion;
 }
 

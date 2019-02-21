@@ -1,7 +1,6 @@
 // /* eslint-disable */
 /* eslint no-undef: 0 */
 
-
 var projectileArrFriendly = [];
 var playerScore = 0;
 var playerHealthElement = document.getElementById('player_health');
@@ -41,7 +40,7 @@ function update() {
 
     playerBehaviour();
     enemyBehaviour();
-    projectileBehaviour();
+    friendlyArr.length > 1 && projectileBehaviour();
 
     proton.update(clock.getDelta());    // this we need. Because reasons.
     Proton.Debug.renderInfo(proton, 3);
@@ -65,7 +64,7 @@ function continueIfLoadingDone() {
     }
 }
 
-/** THE FOLLOWING UPDATE EACH FRAME **/
+/** THE FOLLOWING ARE CALLED EACH FRAME **/
 function updateCameraMatrix() {
     // Not entirely sure what this does. Possibly this needs to watch the objects instead of updating the camera all the time?
     camera.updateMatrixWorld();
@@ -79,10 +78,9 @@ function updateCameraMatrix() {
 
 function playerBehaviour() {
 
-    for (var i = 0; i < friendlyBoundingBoxHelpersArr.length; i++) {
-        friendlyBoundingBoxHelpersArr[i].update();
-        friendlyBoundingBoxArr[i].setFromObject(friendlyBoundingBoxHelpersArr[i]);
-    }
+    // update bounding box helper and hence bounding box for translations. hero is always index 0
+    friendlyBoundingBoxHelpersArr[0].update();
+    friendlyBoundingBoxArr[0].setFromObject(friendlyBoundingBoxHelpersArr[0]);
 
     // kind of a shitty way to have them follow each other, but them's the breaks
     jetSmokeEmitterR.p.x = heroModel.position.x + 20;
@@ -93,9 +91,15 @@ function playerBehaviour() {
     jetSmokeEmitterL.p.y = heroModel.position.y - 22.5;
     jetSmokeEmitterL.p.z = heroModel.position.z;
 
+    // have our outlinemesh follow us
+    heroModeloutlineMesh.position.x = heroModel.position.x;
+    heroModeloutlineMesh.position.y = heroModel.position.y;
+
+    // update health and score display
     playerHealthElement.innerHTML = heroModel.userData.hitpoints;
     playerScoreElement.innerHTML = playerScore;
 
+    // dead:
     if ( heroModel.userData.hitpoints <= 0 ) {
         destroy( heroModel, null );
     }
@@ -103,102 +107,115 @@ function playerBehaviour() {
 
 function enemyBehaviour() {
 
-
-
-
-    for (var i = 0; i < enemyBoundingBoxHelpersArr.length; i++) {
+    // update our bounding box helpers, re-get bounding boxes from them
+    for (let i = 0; i < enemyBoundingBoxHelpersArr.length; i++) {
         enemyBoundingBoxHelpersArr[i].update();
         enemyBoundingBoxArr[i].setFromObject(enemyBoundingBoxHelpersArr[i]);
     }
 
+    // loop through all enemies in our array. Don't want to repeat this, so jam anything in here
     for (let i = 0; i < enemyArr.length; i++) {
-        var currentEnemy = enemyArr[i];
+        var currentEnemy = enemyArr[i]; // easier
 
-        currentEnemy.children[0].children[0].children[1].rotation.x -= 75;
+        // rotating the propellors
+        currentEnemy.children[0].children[0].children[1].rotation.x -= 50;
 
-        enemyCollision( currentEnemy, i );   // currentEnemy, index
+        enemyCollision( currentEnemy, i );
+
+        // if either killed by me, or too far down offscreen (the latter needs a worldPos, since enemies are parented to terrain)
+        let worldVec = new THREE.Vector3();
+        if ( currentEnemy.userData.hitpoints <= 0 || currentEnemy.getWorldPosition(worldVec).y < -500 ) {
+            destroy( currentEnemy, i );
+        }
     }
 
-
     /* INTERIOR FUNCTION BLOCK */
-
     function enemyCollision( currentEnemy, index ) {
 
+        // looping through the array of "other" actors to see who currentEnemy got hit by
         for (let i = 0; i < friendlyBoundingBoxArr.length; i++) {
-            enemyBoundingBoxArr[index].intersectsBox( friendlyBoundingBoxArr[i] ) && console.log('true')
+
+            // current enemy intersects hero or laser, and it's been a while since the last time (userData.hit)
+            if ( enemyBoundingBoxArr[index].intersectsBox( friendlyBoundingBoxArr[i] ) && !currentEnemy.userData.hit ) {
+
+                /** HEROMODEL COLLISION (IT'S ALWAYS AT INDEX 0) **/
+                if ( i === 0 ) {
+
+                    currentEnemy.userData.hitpoints -= heroModel.userData.dealsCollisionDamageAmount;
+                    currentEnemy.userData.hit = true;
+                    setTimeout( () => { // set back to 'hittable' after a certain time
+                        currentEnemy.userData.hit = false;
+                    }, 1000);
+
+                    heroModel.userData.hitpoints -= currentEnemy.userData.dealsCollisionDamageAmount;
+
+                    // randomly bounce hero off enemy and blinking outline
+                    randPos = ( Math.floor( (Math.random() * 75) +50 ) );   // rnd value between 75 and 50
+                    var randPlusOrMinus = Math.random() < 0.5 ? -1 : 1; // if lower than 0.5 then negative..
+                    randPos = randPos * randPlusOrMinus;
+                    heroModel.position.y += randPos;
+                    heroModel.position.x += randPos;
+
+                    showOutline();
+
+                    // camera shake?
+
+                    // console.log(`I (${index}) was hit by Player! My hitpoints: ${currentEnemy.userData.hitpoints}. My BoundinBoxHelper: `, enemyBoundingBoxHelpersArr[index]);
+                }
+
+                /** LASER HIT **/
+                else {
+
+                    currentEnemy.userData.hitpoints -= laserBeamR1.userData.dealsDamageAmount;
+                    currentEnemy.userData.hit = true;
+
+                    let currentEnemyWorldVec = new THREE.Vector3();
+                    console.log(`currentEnemy.getWorldPosition(currentEnemyWorldVec): `, currentEnemy.getWorldPosition(currentEnemyWorldVec));
+
+                    var explosionCurrentEnemy = createFinalExplosion(`enemyExplosion${index}`)
+                    proton.addEmitter(explosionCurrentEnemy);
+
+                    explosionCurrentEnemy.p.x = currentEnemyWorldVec.x;
+                    explosionCurrentEnemy.p.y = currentEnemyWorldVec.y;
+                    explosionCurrentEnemy.p.z = currentEnemyWorldVec.z;
+
+                    explosionCurrentEnemy.emit();
+                    const explosionCurrentEnemyArrIndex = explosionArray.push(explosionCurrentEnemy) - 1; // returns new length, so index is one down
+
+                    setTimeout( () => {
+                        explosionCurrentEnemy.destroy();
+                        explosionArray.splice( explosionCurrentEnemyArrIndex, 1 );
+                        console.log(`explosionArray: `, explosionArray);
+                    }, 500)
+
+                    setTimeout( () => { // set back to 'hittable' after a certain time
+                        currentEnemy.userData.hit = false;
+                    }, 1000);
+                }
+            }
         }
-        // // since for some reason setFromMatrixPosition initializes with 0 0 0, there was a hit event at the very start. hence setTimeout
-        // setTimeout(function() {
-        //
-        //     var enemyPos = new THREE.Vector3(); // THREE's distanceTo() is a method of Vector3(), so we need to use this
-        //
-        //     enemyPos.setFromMatrixPosition( currentEnemy.matrixWorld ); // updates world pos of enemy each frame
-        //
-        //     // distance is closer than the hitDistance and it's not been hit:
-        //     if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) <= currentEnemy.userData.hitDistance && !currentEnemy.userData.hit ) {
-        //         currentEnemy.userData.hit = true; // to avoid multiple hits
-        //
-        //         console.log(`\n==========\n ${currentEnemy.name} hit!\n==========`);
-        //
-        //         currentEnemy.userData.hitpoints -= heroModel.userData.dealsCollisionDamageAmount;
-        //         heroModel.userData.hitpoints -= currentEnemy.userData.dealsCollisionDamageAmount;
-        //
-        //         console.log(`${currentEnemy.name} hitpoints now: ${currentEnemy.userData.hitpoints} `);
-        //         console.log(`heroModel hitpoints now: ${heroModel.userData.hitpoints}`);
-        //
-        //         // If no more hitpoints or too far off screen
-        //         if ( currentEnemy.userData.hitpoints <= 0 || currentEnemy.position.y < -1000 ) {
-        //             destroy( currentEnemy, index );
-        //         }
-        //     }
-        //     else if ( Math.floor( enemyPos.distanceTo( heroModel.position ) ) >= currentEnemy.userData.hitDistance && currentEnemy.userData.hit ) {
-        //         // turn the hit counter back to false after we back off. possibly need to tune hitDistance / 2 or something
-        //         currentEnemy.userData.hit = false;
-        //         console.log(`currentEnemy.userData.hit: `, currentEnemy.userData.hit);
-        //
-        //         // hasCollided=true;
-        //         // explode();
-        //     }
-        //
-        // }, 1);
     }
 }
 
 function projectileBehaviour() {
-    // if Projectiles exist
-    if ( projectileArrFriendly.length > 0 ) {
 
-        projectileArrFriendly.forEach( (projectile, idx) => {
-            projectile.position.y += 10;
+    for (let i = 1; i < friendlyArr.length; i++ ) {
+        friendlyArr[i].position.y += 10;
 
-            // projectile.traverse( function( node ) {
-            //     if ( node instanceof THREE.Mesh ) {
-            //         console.log(`node.geometry.boundingSphere.intersectsSphere(  ): `, node.geometry.boundingSphere.intersectsSphere());
-            //     }
-            // });
+        friendlyBoundingBoxHelpersArr[i].update();
+        friendlyBoundingBoxArr[i].setFromObject( friendlyBoundingBoxHelpersArr[i] );
 
-            // enemyArr.forEach( (curEnemy, index) => {
-            //
-            //     console.log(`projectile: `, projectile);
-            //     console.log(`curEnemy: `, curEnemy);
-            //     // var enemyPos = new THREE.Vector3(); // THREE's distanceTo() is a method of Vector3(), so we need to use this
-            //     // enemyPos.setFromMatrixPosition( curEnemy.matrixWorld ); // updates world pos of enemy each frame
-            //
-            //     if ( projectile.userData.boundingBox.intersectsBox( curEnemy.userData.boundingBox ) ) {
-            //
-            //         console.log(`\n==========\n ${curEnemy.name} hit!\n==========`);
-            //
-            //         // curEnemy.userData.hitpoints -= projectile.userData.dealsDamageAmount;
-            //         //
-            //         // console.log(`${curEnemy.name} hitpoints now: ${curEnemy.userData.hitpoints} `);
-            //         //
-            //         // // If no more hitpoints or too far off screen
-            //         // if ( curEnemy.userData.hitpoints <= 0) {
-            //         //     destroy( curEnemy, index );
-            //         // }
-            //     }
-            // })
-        })
+        // if too far up offscreen
+        if ( friendlyArr[i].position.y > 1500 ) {
+            friendlyArr.splice(i, 1);
+            friendlyBoundingBoxHelpersArr.splice(i, 1);
+            friendlyBoundingBoxArr.splice(i, 1);
+
+            friendlyArr[i].visible = false;
+            scene.remove( friendlyBoundingBoxHelpersArr[i] );
+            scene.remove( friendlyArr[i] );
+            console.log(`friendlyArr: `, friendlyArr);
+        }
     }
 }
 
@@ -219,24 +236,61 @@ function destroy( actor, index ) {
         heroModel.rotation.z -= 3 * Math.PI / 180;
         heroModel.rotation.y += 5 * Math.PI / 180;
 
-        // pause
+        // pause after crashing and burning
         setTimeout( ()=> {
             actor.visible = false;
             cancelAnimationFrame(animationFrameId);
         }, 2000 );
     }
-    else
+    else    // it's an enemy
     {
         playerScore += actor.userData.pointsIfKilled;   // update playerScore
-        enemyArr.splice(index, 1);
-        console.log(`enemyArr: `, enemyArr);
+
+
+        // // trying to keep the array numbering intact:
+        // enemyArr[index] = null;
+        // enemyBoundingBoxHelpersArr[index] = null;
+        // enemyBoundingBoxArr[index] = null
+
+        enemyArr.splice(index, 1);  // remove from array of enemies
+        enemyBoundingBoxHelpersArr.splice(index, 1);
+        enemyBoundingBoxArr.splice(index, 1);
+
         actor.visible = false;
+        scene.remove( enemyBoundingBoxHelpersArr[index] );
+        scene.remove( actor );
+
+        console.log(`enemyArr, enemyBoundingBoxHelpersArr: `, enemyArr, enemyBoundingBoxHelpersArr);
+
     }
 
     // scene.remove is not working; so I hide it.
-    // scene.remove(actor);
 
     console.log(`${actor.name} DEAD`);
 
     renderer.renderLists.dispose(); // prevents memory leaks
+}
+
+function showOutline() {
+    if ( heroModel.userData.hitpoints > 0 ) {
+        var blinkCounter = 0;
+
+        heroModeloutlineMesh.visible = true;
+        heroModel.visible = false;
+
+        blinkLoop();
+
+        function blinkLoop() {
+            if (blinkCounter <= 10) {
+                heroModeloutlineMesh.visible = !heroModeloutlineMesh.visible;
+                heroModel.visible = !heroModel.visible;
+                blinkCounter++;
+
+                setTimeout( blinkLoop, 75);
+            } else {
+                heroModeloutlineMesh.visible = false;
+                heroModel.visible = true;
+            }
+        }
+    }
 }
