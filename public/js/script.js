@@ -5,6 +5,7 @@ var projectileArrFriendly = [];
 var playerScore = 0;
 var playerHealthElement = document.getElementById('player_health');
 var playerScoreElement = document.getElementById('player_score');
+var gameStarted = false;
 
 /** BEGIN STUFF **/
 

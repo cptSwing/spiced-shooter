@@ -4,28 +4,83 @@
     box-sizing: border-box;
 }
 
+:root {
+    --menu_content_width: 40vw;
+    --menu_border_horizontal: 2.5vh;
+    --menu_border_vertical: 2vw;
+}
+
 #game_wrapper {
 }
 
-#scoreboard {
+/* #scoreboard {
     position: absolute;
     top: 0;
     background-color: red;
-    z-index: 100;
+    z-index: 10;
     width: 300px;
     height: 50px;
-}
+} */
 
 #player_score {
-    position: relative;
+    position: absolute;
     left: 0;
     width: 100px;
+    background-color: red;
+    z-index: 10;
 }
 
 #player_health {
-    position: relative;
+    position: absolute;
     right: 0;
     width: 100px;
+    background-color: red;
+    z-index: 10;
+}
+
+#menu {
+    position: absolute;
+    margin: 0 auto;
+    width: 50vw;
+    height: 50vh;
+    z-index: 100;
+    left: 0;
+    right: 0;
+    top: 20vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    visibility: visible;
+    filter: drop-shadow( 10px 10px 0px rgba(000, 000, 000, 0.5) );        /* offset-x offset-y blur-radius spread-radius color */
+}
+
+#menu > div {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.menu_border_corner {
+    width: var(--menu_border_vertical);
+    height: var(--menu_border_horizontal);
+}
+
+.menu_border_vertical {
+    background-color: blue;
+    width: var(--menu_border_vertical);
+}
+
+.menu_border_horizontal {
+    background-color: blue;
+    width: var(--menu_content_width);
+    /* height: var(--menu_border_horizontal); */
+}
+
+#menu_content {
+    width: var(--menu_content_width);
+    height: 40vh;
+    background-color: blue;
+
 }
 
 #world {

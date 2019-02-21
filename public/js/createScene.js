@@ -1,5 +1,5 @@
 /* eslint no-undef: 0 */
-var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, THREE, renderer, container;
+var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, renderer, container;
 
 
 function createScene() {
@@ -24,7 +24,7 @@ function createScene() {
     // Set the position of the camera. Y is a bit of a drag in that I need to set arbitrary values to fit 0 0 0 on the center of the screen (perspective distortion)
     camera.position.x = 0;
     camera.position.z = 600;
-    camera.position.y =  -(HEIGHT*0.5);
+    camera.position.y =  -500;
     camera.rotation.x = 40 * Math.PI / 180;
 
     cameraFrustum = new THREE.Frustum();
@@ -37,7 +37,7 @@ function createScene() {
     });
 
     // Define the size of the renderer; in this case, it will fill the entire screen
-    renderer.setSize(WIDTH, HEIGHT);
+    renderer.setSize(WIDTH/2, HEIGHT/2);
 
     // Enable shadow rendering
     renderer.shadowMap.enabled = true;
@@ -49,14 +49,22 @@ function createScene() {
 
     clock = new THREE.Clock();
 
+    var c = document.querySelector('#world > canvas');
+    c.style.width = WIDTH + 'px';
+    c.style.height = HEIGHT + 'px';
+    c.style.imageRendering = 'pixelated'
+
     // Listen to the screen: if the user resizes it we have to update the camera and the renderer size
     window.addEventListener('resize', handleWindowResize, false);
     function handleWindowResize() {
         // update height and width of the renderer and the camera
         HEIGHT = window.innerHeight;
         WIDTH = window.innerWidth;
-        renderer.setSize(WIDTH, HEIGHT);
+        renderer.setSize(WIDTH/2, HEIGHT/2);
         camera.aspect = WIDTH / HEIGHT;
         camera.updateProjectionMatrix();
+        c.style.width = WIDTH + 'px';
+        c.style.height = HEIGHT + 'px';
     }
+
 }
