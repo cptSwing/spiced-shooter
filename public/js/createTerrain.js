@@ -1,22 +1,38 @@
 var terrainScene;
+var cubeTexture;
 
 // Generate a terrain
 function createTerrain() {
     // allow for wider terrain to accomodate perspective camera
-    var widthBeyondScreen = 0.3;
+    var widthBeyondScreen = 0.4;
     var xSize = WIDTH + (WIDTH * widthBeyondScreen);
     var ySize = 10000;
 
     // yS: I need to have even distributing of segments to avoid stretching. floats throw an error, so round
-    var xS = 50;
+    var xS = 60;
     var yS = Math.round(xS * (ySize / (WIDTH + (WIDTH * widthBeyondScreen) ) ) );
+
+    var texLoader = new THREE.TextureLoader();
+
+    var t1 = texLoader.load('./images/sand1.jpg', () => {} );
+    var t2 = texLoader.load('./images/grass1.jpg', () => {} );
+    var t3 = texLoader.load('./images/stone1.jpg', () => {} );
+
+    // a LAMBERT material
+    var blend = THREE.Terrain.generateBlendedMaterial([
+        {texture: t1},  // basic
+        {texture: t2, levels: [-250, -230, -135, -100]},    // blend in at, opaque from N to N, blend out at
+        {texture: t3, levels: [-120, -105, -100, -100]},
+    ]);
+
+    blend.name = 'blend'
 
     terrainScene = THREE.Terrain({
         // Valid values include THREE.Terrain.Linear, .EaseIn, .EaseOut, .EaseInOut, .InEaseOut:
         easing: THREE.Terrain.EaseInOut,
         frequency: 4,
         heightmap: THREE.Terrain.Hill,
-        material: new THREE.MeshStandardMaterial({color: 0x8D9A2E, metalness: 0 }),
+        material: blend,
         maxHeight: -100,
         minHeight: -250,
         steps: 2,
@@ -44,7 +60,7 @@ function createTerrain() {
     // create a bounding box, and move its origin/center to the base (translate Y)
     decoMeshGeo.geometry.computeBoundingBox();
     decoMeshGeo.geometry.translate(0, 25, 0);
-    var decoMeshMat = new THREE.MeshStandardMaterial( { color: 0x45772A, metalness: 0 } );
+    var decoMeshMat = new THREE.MeshStandardMaterial( { color: 0x45772A, roughness: 0.85, metalness: 0 } );
 
     // Add randomly distributed foliage
     var decoScene = THREE.Terrain.ScatterMeshes(geo, {
@@ -68,6 +84,16 @@ function createTerrain() {
 
     terrainScene.add(decoScene);
 
+    var seaPlaneGeo = new THREE.PlaneBufferGeometry(xSize, ySize, 1, 1);
+    var seaPlaneMat = new THREE.MeshStandardMaterial({ color: 0x2662C2, roughness: 0.2, metalness: 0.85, transparent: true, opacity: 0.75 });
+    var seaPlane = new THREE.Mesh(seaPlaneGeo, seaPlaneMat);
+    seaPlane.position.z = -242.5;
+    seaPlane.name = "seaPlane";
+    seaPlane.receiveShadow = true;
+    seaPlane.castShadow = true;
+
+    terrainScene.add(seaPlane);
+
     // I have no idea why I need to set a rotation of nothing to actually turn it the way I want it to be.
     terrainScene.rotation.x = 0;
 
@@ -80,4 +106,17 @@ function createTerrain() {
 
 
     scene.add(terrainScene);
+
+    // /** ADD CUBEMAP **/
+
+    cubeTexture = new THREE.CubeTextureLoader().load( [
+        './images/nevada_posX.jpg', './images/nevada_negX.jpg',
+        './images/nevada_posY.jpg', './images/nevada_negY.jpg',
+        './images/nevada_posZ.jpg', './images/nevada_negZ.jpg'
+    ], (xhr) => {
+        console.log(`xhr: `, xhr);
+    }, err => {
+        console.log(`loading image error: `, err);
+    } );
+
 }

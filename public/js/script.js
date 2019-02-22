@@ -3,8 +3,8 @@
 
 var projectileArrFriendly = [];
 var playerScore = 0;
-var playerHealthElement = document.getElementById('player_health');
-var playerScoreElement = document.getElementById('player_score');
+var playerHealthElement = document.querySelector('#player_health > span');
+var playerScoreElement = document.querySelector('#player_score > span');
 var gameStarted = false;
 
 /** BEGIN STUFF **/
@@ -24,6 +24,19 @@ function init() {
         // orbit controls I use for debugging - mess with the viewport bounds though (re keyboardcontrol of hero)
         // var orbit = new THREE.OrbitControls(camera, renderer.domElement);
         // orbit.enableZoom = true;
+
+        scene.traverse( node => {
+            if ( node instanceof THREE.Mesh ) {
+                if ( node.material && node.material.name != 'blend' ) {
+
+                    node.material.envMap = cubeTexture;
+                    node.material.needsUpdate = true;
+                }
+            }
+        });
+
+        console.log(`cubeTexture: `, cubeTexture);
+        scene.background = cubeTexture;
     }
 
     update();
@@ -32,15 +45,47 @@ function init() {
 var animationFrameId = null;
 /* UPDATE function which runs every frame */
 
+var wave1 = false;
+var wave1Dist = 600;
+var wave2 = false;
+var wave2Dist = 1500;
+var wave3 = false;
+var wave3Dist = 2250;
+
 function update() {
-    console.log(`animationFrameId: `, animationFrameId);
-    console.log(`paused: `, paused);
     if (!paused) {
         animationFrameId = requestAnimationFrame( update ); // up top to ensure pausing from within child fn. will run update() before, though!
     }
 
     terrainScene.position.y -= 0.75;    // scrolling..
     console.log(`terrainScene.position.y: `, terrainScene.position.y);
+
+    if (terrainScene.position.y <= -wave1Dist && !wave1) {
+        addEnemy( [-200, wave1Dist + 1000] );
+        addEnemy( [0, wave1Dist + 1250] );
+        addEnemy( [200, wave1Dist + 1500] );
+        wave1 = true;
+    }
+
+    if (terrainScene.position.y <= -wave2Dist && !wave2) {
+        addEnemy( [-400, wave2Dist + 1000] );
+        addEnemy( [-200, wave2Dist + 1250] );
+        addEnemy( [0, wave2Dist + 1500] );
+        addEnemy( [200, wave2Dist + 1750] );
+        addEnemy( [400, wave2Dist + 2000] );
+        wave2 = true;
+    }
+
+    if (terrainScene.position.y <= -wave3Dist && !wave3) {
+        addEnemy( [-400, wave3Dist + 1000] );
+        addEnemy( [-200, wave3Dist + 1250] );
+        addEnemy( [0, wave3Dist + 1500] );
+        addEnemy( [200, wave3Dist + 1750] );
+        addEnemy( [400, wave3Dist + 2000] );
+        wave3 = true;
+    }
+
+
 
     updateCameraMatrix();
 
@@ -49,7 +94,7 @@ function update() {
     friendlyArr.length > 1 && projectileBehaviour(); // if projectiles present (since friendlyArr[0] is always player)
 
     proton.update(clock.getDelta());    // this we need. Because reasons.
-    Proton.Debug.renderInfo(proton, 3);
+    // Proton.Debug.renderInfo(proton, 3);
 
     renderer.render( scene, camera );
 }
@@ -122,6 +167,8 @@ function enemyBehaviour() {
     // loop through all enemies in our array. Don't want to repeat this, so jam anything in here
     for (let i = 0; i < enemyArr.length; i++) {
         var currentEnemy = enemyArr[i]; // easier
+
+        currentEnemy.position.y -= currentEnemy.userData.movementFront;
 
         // rotating the propellors
         currentEnemy.children[0].children[0].children[1].rotation.x -= 50;
@@ -218,7 +265,7 @@ function enemyBehaviour() {
 
                     setTimeout( () => { // set back to 'hittable' after a certain time
                         currentEnemy.userData.hit = false;
-                    }, 1000);
+                    }, 500);
                 }
             }
         }

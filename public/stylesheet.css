@@ -2,40 +2,40 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'VT323', monospace;
+    color: rgb(161, 30, 7);
+    font-size: 1.2em;
 }
 
 :root {
     --menu_content_width: 40vw;
     --menu_border_horizontal: 2.5vh;
     --menu_border_vertical: 2vw;
+    --menu_background_color: rgb(236, 210, 13)
 }
 
 #game_wrapper {
+    /* box-shadow: inset 0px 0px 10px 5px rgba(0,0,0,0.75); */
 }
-
-/* #scoreboard {
-    position: absolute;
-    top: 0;
-    background-color: red;
-    z-index: 10;
-    width: 300px;
-    height: 50px;
-} */
 
 #player_score {
     position: absolute;
     left: 0;
-    width: 100px;
-    background-color: red;
+    width: 200px;
+    background-color: var(--menu_background_color);
     z-index: 10;
+    text-align: center;
+    filter: drop-shadow( -10px 10px 0px rgba(000, 000, 000, 0.5) );        /* offset-x offset-y blur-radius spread-radius color */
 }
 
 #player_health {
     position: absolute;
     right: 0;
-    width: 100px;
-    background-color: red;
+    width: 200px;
+    background-color: var(--menu_background_color);
     z-index: 10;
+    text-align: center;
+    filter: drop-shadow( 10px 10px 0px rgba(000, 000, 000, 0.5) );        /* offset-x offset-y blur-radius spread-radius color */
 }
 
 #menu {
@@ -66,12 +66,12 @@
 }
 
 .menu_border_vertical {
-    background-color: blue;
+    background-color: var(--menu_background_color);
     width: var(--menu_border_vertical);
 }
 
 .menu_border_horizontal {
-    background-color: blue;
+    background-color: var(--menu_background_color);
     width: var(--menu_content_width);
     /* height: var(--menu_border_horizontal); */
 }
@@ -79,7 +79,7 @@
 #menu_content {
     width: var(--menu_content_width);
     height: 40vh;
-    background-color: blue;
+    background-color: var(--menu_background_color);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -88,6 +88,7 @@
 
 .menu_content_children_active {
     background-color: red;
+    padding: 0 10px;
 }
 
 #world {
@@ -96,4 +97,20 @@
 	height: 100%;
 	overflow: hidden;
 	background: linear-gradient(#e4e0ba, #f7d9aa);
+}
+
+.highscores {
+    font-size: 0.5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.highscores > span:first-of-type {
+    display: inline-block;
+    width: 20vw;
+}
+
+.highscores > span:last-of-type {
+    display: inline-block;
 }

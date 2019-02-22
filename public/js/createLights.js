@@ -28,6 +28,6 @@ function createLights() {
     scene.add(hemisphereLight);
     scene.add(shadowLight);
     scene.add(shadowLight.target);
-    scene.add(shadowLightHelper);
-    scene.add(shadowLightCameraHelper);
+    // scene.add(shadowLightHelper);
+    // scene.add(shadowLightCameraHelper);
 }

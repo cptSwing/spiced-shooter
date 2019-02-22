@@ -18,9 +18,9 @@ function createActors() {
 
     addHero();
 
-    addEnemy( [0, 500] );
     addEnemy( [-200, 750] );
     addEnemy( [0, 1000] );
+    addEnemy( [200, 1250] );
 
 }
 
@@ -55,6 +55,7 @@ function addHero() {
     // helps us create bounding box and visualizes
     var heroBBoxHelper = new THREE.BoxHelper(heroModel, 0x00ff00);
     heroBBoxHelper.name = 'heroBBoxHelper';
+    heroBBoxHelper.visible = false;
     scene.add(heroBBoxHelper);
     friendlyBoundingBoxHelpersArr.unshift(heroBBoxHelper);
 
@@ -105,12 +106,14 @@ function addEnemy( posXY ) {
     en.userData.hit = false;
     en.userData.dealsCollisionDamageAmount = 50;
     en.userData.pointsIfKilled = 100;
+    en.userData.movementFront = 1;
 
     en.position.set(posXY[0], posXY[1], 0);
 
     // helps us create bounding box and visualizes
     var enBBoxHelper = new THREE.BoxHelper(en, 0xff0000);
     enBBoxHelper.name = enemyArr.length;
+    enBBoxHelper.visible = false;
     scene.add(enBBoxHelper);
     enemyBoundingBoxHelpersArr.push(enBBoxHelper);
 
@@ -165,6 +168,7 @@ function shootLasers() {
         // helps us create bounding box and visualizes
         var laserBeamGroupBBoxHelper = new THREE.BoxHelper(laserBeamGroup, 0x0000ff);
         laserBeamGroupBBoxHelper.name = friendlyArr.length;
+        laserBeamGroupBBoxHelper.visible = false;
         scene.add(laserBeamGroupBBoxHelper);
         friendlyBoundingBoxHelpersArr.push(laserBeamGroupBBoxHelper);
 

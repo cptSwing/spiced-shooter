@@ -41,12 +41,12 @@ function keybinds(e) {
             else if (menuContentChildrenIndex == 2) { // HIGHSCORES
                 menuContent.innerHTML = `
                     <div class="highscores">
-                        <span>&#9825; Shilpa &#9825;</span>
+                        <span>Shilpa &#9825;</span>
                         <span>1,000,001</span>
                     </div>
                     <div class="highscores">
                         <span>David</span>
-                        <span>1,000,000</span><David
+                        <span>1,000,000</span>
                     </div>
                     <div class="highscores">
                         <span>Ivana</span>
@@ -57,7 +57,7 @@ function keybinds(e) {
                         <span>1,000,000</span>
                     </div>
                     <div class="highscores">
-                        <span>&#9773; Jens &#9773;</span>
+                        <span>Jens &#9773;</span>
                         <span>1,000,000</span>
                     </div>
                 `;

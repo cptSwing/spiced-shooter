@@ -37,7 +37,7 @@ function createScene() {
     });
 
     // Define the size of the renderer; in this case, it will fill the entire screen
-    renderer.setSize(WIDTH/2, HEIGHT/2);
+    renderer.setSize(WIDTH, HEIGHT);
 
     // Enable shadow rendering
     renderer.shadowMap.enabled = true;
@@ -60,7 +60,7 @@ function createScene() {
         // update height and width of the renderer and the camera
         HEIGHT = window.innerHeight;
         WIDTH = window.innerWidth;
-        renderer.setSize(WIDTH/2, HEIGHT/2);
+        renderer.setSize(WIDTH, HEIGHT);
         camera.aspect = WIDTH / HEIGHT;
         camera.updateProjectionMatrix();
         c.style.width = WIDTH + 'px';
