@@ -33,15 +33,20 @@ var animationFrameId = null;
 /* UPDATE function which runs every frame */
 
 function update() {
-    animationFrameId = requestAnimationFrame( update ); // up top to ensure pausing from within child fn. will run update() before, though!
+    console.log(`animationFrameId: `, animationFrameId);
+    console.log(`paused: `, paused);
+    if (!paused) {
+        animationFrameId = requestAnimationFrame( update ); // up top to ensure pausing from within child fn. will run update() before, though!
+    }
 
     terrainScene.position.y -= 0.75;    // scrolling..
+    console.log(`terrainScene.position.y: `, terrainScene.position.y);
 
     updateCameraMatrix();
 
     playerBehaviour();
     enemyBehaviour();
-    friendlyArr.length > 1 && projectileBehaviour();
+    friendlyArr.length > 1 && projectileBehaviour(); // if projectiles present (since friendlyArr[0] is always player)
 
     proton.update(clock.getDelta());    // this we need. Because reasons.
     Proton.Debug.renderInfo(proton, 3);
@@ -61,7 +66,7 @@ function continueIfLoadingDone() {
         setTimeout(function() {
             console.log(`allGLTFLoaded: not yet fully loaded.`);
             continueIfLoadingDone();
-        }, 2000);
+        }, 1000);
     }
 }
 
@@ -143,6 +148,27 @@ function enemyBehaviour() {
                 if ( i === 0 ) {
 
                     currentEnemy.userData.hitpoints -= heroModel.userData.dealsCollisionDamageAmount;
+
+                    let currentEnemyWorldVec = new THREE.Vector3();
+                    console.log(`currentEnemy.getWorldPosition(currentEnemyWorldVec): `, currentEnemy.getWorldPosition(currentEnemyWorldVec));
+
+                    var explosionCurrentEnemy = createFinalExplosion(`enemyExplosion${index}`);
+                    proton.addEmitter(explosionCurrentEnemy);
+
+                    explosionCurrentEnemy.p.x = currentEnemyWorldVec.x;
+                    explosionCurrentEnemy.p.y = currentEnemyWorldVec.y;
+                    explosionCurrentEnemy.p.z = currentEnemyWorldVec.z;
+
+                    explosionCurrentEnemy.emit();
+                    const explosionCurrentEnemyArrIndex
+                        = explosionArray.push(explosionCurrentEnemy) - 1; // returns new length, so index is one down
+
+                    setTimeout( () => {
+                        explosionCurrentEnemy.destroy();
+                        explosionArray.splice( explosionCurrentEnemyArrIndex, 1 );
+                        console.log(`explosionArray: `, explosionArray);
+                    }, 500);
+
                     currentEnemy.userData.hit = true;
                     setTimeout( () => { // set back to 'hittable' after a certain time
                         currentEnemy.userData.hit = false;
@@ -173,7 +199,7 @@ function enemyBehaviour() {
                     let currentEnemyWorldVec = new THREE.Vector3();
                     console.log(`currentEnemy.getWorldPosition(currentEnemyWorldVec): `, currentEnemy.getWorldPosition(currentEnemyWorldVec));
 
-                    var explosionCurrentEnemy = createFinalExplosion(`enemyExplosion${index}`)
+                    var explosionCurrentEnemy = createFinalExplosion(`enemyExplosion${index}`);
                     proton.addEmitter(explosionCurrentEnemy);
 
                     explosionCurrentEnemy.p.x = currentEnemyWorldVec.x;
@@ -181,13 +207,14 @@ function enemyBehaviour() {
                     explosionCurrentEnemy.p.z = currentEnemyWorldVec.z;
 
                     explosionCurrentEnemy.emit();
-                    const explosionCurrentEnemyArrIndex = explosionArray.push(explosionCurrentEnemy) - 1; // returns new length, so index is one down
+                    const explosionCurrentEnemyArrIndex
+                        = explosionArray.push(explosionCurrentEnemy) - 1; // returns new length, so index is one down
 
                     setTimeout( () => {
                         explosionCurrentEnemy.destroy();
                         explosionArray.splice( explosionCurrentEnemyArrIndex, 1 );
                         console.log(`explosionArray: `, explosionArray);
-                    }, 500)
+                    }, 500);
 
                     setTimeout( () => { // set back to 'hittable' after a certain time
                         currentEnemy.userData.hit = false;
@@ -241,6 +268,14 @@ function destroy( actor, index ) {
         setTimeout( ()=> {
             actor.visible = false;
             cancelAnimationFrame(animationFrameId);
+            menuSelector.style.visibility = 'visible';
+            menuContent.innerHTML = `
+                <div>YOU LOSE!</div>
+                <div>SCORE:</div>
+                <div>${playerScore}</div>
+            `;
+            paused = true;
+            document.addEventListener('keydown', keybinds); // re-set after taking control away after death
         }, 2000 );
     }
     else    // it's an enemy

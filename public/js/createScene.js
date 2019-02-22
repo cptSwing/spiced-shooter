@@ -1,5 +1,5 @@
 /* eslint no-undef: 0 */
-var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, renderer, container;
+var scene, camera, cameraFrustum, cameraViewProjectionMatrix, HEIGHT, WIDTH, renderer, container, menuHTML, menuContent, menuContentChildren;
 
 
 function createScene() {
@@ -52,7 +52,7 @@ function createScene() {
     var c = document.querySelector('#world > canvas');
     c.style.width = WIDTH + 'px';
     c.style.height = HEIGHT + 'px';
-    c.style.imageRendering = 'pixelated'
+    c.style.imageRendering = 'pixelated';
 
     // Listen to the screen: if the user resizes it we have to update the camera and the renderer size
     window.addEventListener('resize', handleWindowResize, false);
@@ -66,5 +66,10 @@ function createScene() {
         c.style.width = WIDTH + 'px';
         c.style.height = HEIGHT + 'px';
     }
+
+    menuContent = document.getElementById('menu_content');
+    menuContentChildren = document.querySelectorAll('#menu_content > div');
+
+
 
 }

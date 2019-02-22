@@ -80,7 +80,14 @@
     width: var(--menu_content_width);
     height: 40vh;
     background-color: blue;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 
+.menu_content_children_active {
+    background-color: red;
 }
 
 #world {
